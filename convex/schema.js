@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // Users
   users: defineTable({
     name: v.string(),
     email: v.string(),
@@ -13,6 +14,7 @@ export default defineSchema({
     .searchIndex("search_name", { searchField: "name" })
     .searchIndex("search_email", { searchField: "email" }),
 
+  // Expenses
   expenses: defineTable({
     description: v.string(),
     amount: v.number(),
@@ -25,40 +27,42 @@ export default defineSchema({
         userId: v.id("users"), // Reference to users table
         amount: v.number(), // amount owed by this user
         paid: v.boolean(),
-      })
+      }),
     ),
-    groupId: v.optional(v.id("groups")), // undefined for one-on-one expenses
+    groupId: v.optional(v.id("groups")), // null for one-on-one expenses
     createdBy: v.id("users"), // Reference to users table
   })
     .index("by_group", ["groupId"])
     .index("by_user_and_group", ["paidByUserId", "groupId"])
     .index("by_date", ["date"]),
 
-  groups: defineTable({
-    name: v.string(),
-    description: v.string(),
-    createdBy: v.id("users"),
-    members: v.array(
-      v.object({
-        userId: v.id("users"), // Reference to users table
-        role: v.string(), // "admin", "member"
-        joinedAt: v.number(),
-      })
-    ),
-  }),
-
+  // Settlements
   settlements: defineTable({
     amount: v.number(),
     note: v.optional(v.string()),
     date: v.number(), // timestamp
     paidByUserId: v.id("users"), // Reference to users table
     receivedByUserId: v.id("users"), // Reference to users table
-    groupId: v.optional(v.id("groups")), // undefined for one-on-one expenses
-    relatedExpenseId: v.optional(v.array(v.id("expenses"))), // which expenses this settlement covers
+    groupId: v.optional(v.id("groups")), // null for one-on-one settlements
+    relatedExpenseIds: v.optional(v.array(v.id("expenses"))), // Which expenses this settlement covers
     createdBy: v.id("users"), // Reference to users table
   })
     .index("by_group", ["groupId"])
     .index("by_user_and_group", ["paidByUserId", "groupId"])
     .index("by_receiver_and_group", ["receivedByUserId", "groupId"])
     .index("by_date", ["date"]),
+
+  // Groups
+  groups: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    createdBy: v.id("users"), // Reference to users table
+    members: v.array(
+      v.object({
+        userId: v.id("users"), // Reference to users table
+        role: v.string(), // "admin" or "member"
+        joinedAt: v.number(),
+      }),
+    ),
+  }),
 });
